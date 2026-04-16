@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>NEOTETRIS</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,6 +31,7 @@
     box-shadow: 8px 8px 0px #FF00FF, -3px -3px 0px #00FFFF;
     user-select: none;
     position: relative;
+    text-align: center;
   }
   h1::after {
     content: '';
@@ -94,6 +95,7 @@
     box-shadow: 8px 8px 0px #111;
     background: #FAFAF5;
     display: block;
+    touch-action: none;
   }
 
   .controls-ref {
@@ -170,16 +172,119 @@
     display: inline-block;
   }
 
-  @media (max-width: 600px) {
-    .game-wrap { flex-direction: column; align-items: center; }
-    .panel { min-width: 140px; }
+  /* ── Mobile compact stats bar ── */
+  .mobile-bar {
+    display: none;
+    width: 100%;
+    background: #FFF;
+    border: 4px solid #111;
+    box-shadow: 4px 4px 0px #111;
+    padding: 6px 10px;
+    gap: 4px;
+    align-items: center;
+    justify-content: space-around;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .mobile-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+  }
+  .m-label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #666;
+  }
+  .m-value {
+    font-size: 1.15rem;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+  #nextCanvasMobile {
+    border: 2px solid #111;
+    background: #FAFAF5;
+    display: block;
+    box-shadow: 2px 2px 0px #FF00FF;
+  }
+
+  /* ── Touch controls ── */
+  .touch-controls {
+    display: none;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+    align-items: center;
+    width: 100%;
+    flex-shrink: 0;
+  }
+  .touch-row {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+  }
+  .touch-btn {
+    width: 64px;
+    height: 54px;
+    background: #111;
+    color: #FFE500;
+    border: 3px solid #111;
+    font-size: 1.3rem;
+    font-weight: 900;
+    cursor: pointer;
+    box-shadow: 3px 3px 0px #FF00FF;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .touch-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0px #FF00FF;
+    background: #FF00FF;
+    color: #111;
+  }
+  .touch-btn.wide { width: 96px; }
+  .touch-btn.sm-text { font-size: 0.68rem; letter-spacing: 1px; }
+
+  /* ── Medium screens: tighter panels ── */
+  @media (max-width: 800px) and (min-width: 601px) {
+    .panel { min-width: 130px; padding: 10px 12px; }
+    .panel h2 { font-size: 0.75rem; }
+    .stat-value { font-size: 1.5rem; }
+    .game-wrap { gap: 14px; }
+  }
+
+  /* ── Compact header for short screens (landscape phones, small desktops) ── */
+  @media (max-height: 500px) {
+    body { padding: 4px 10px; }
+    h1 {
+      font-size: clamp(1.2rem, 4vw, 2rem);
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+      padding: 5px 16px;
+      box-shadow: 4px 4px 0px #FF00FF, -2px -2px 0px #00FFFF;
+    }
+    h1::after { display: none; }
+    .game-wrap { gap: 10px; margin-top: 4px; }
+    .panel { padding: 8px 10px; min-width: 110px; }
+    .panel h2 { font-size: 0.7rem; padding-bottom: 3px; margin-bottom: 5px; }
+    .stat-value { font-size: 1.2rem; }
   }
 </style>
 </head>
 <body>
 <h1>NEOTETRIS</h1>
 <div class="game-wrap">
-  <div style="display:flex;flex-direction:column;gap:14px;">
+  <!-- Desktop: left side panels -->
+  <div id="leftPanels" style="display:flex;flex-direction:column;gap:14px;">
     <div class="panel accent-magenta">
       <h2>Next</h2>
       <canvas id="nextCanvas" width="120" height="120"></canvas>
@@ -201,6 +306,7 @@
     </div>
   </div>
 
+  <!-- Board -->
   <div class="board-wrap">
     <canvas id="gameCanvas"></canvas>
     <div class="overlay" id="startOverlay">
@@ -218,7 +324,8 @@
     </div>
   </div>
 
-  <div style="display:flex;flex-direction:column;gap:14px;">
+  <!-- Desktop: right side panel -->
+  <div id="rightPanels" style="display:flex;flex-direction:column;gap:14px;">
     <div class="panel accent-orange controls-ref">
       <h2>Controls</h2>
       <div class="ctrl-row"><kbd>←</kbd> <kbd>→</kbd> <span>Move</span></div>
@@ -230,17 +337,58 @@
   </div>
 </div>
 
+<!-- Mobile compact stats bar (shown only on mobile, outside game-wrap so it spans full width) -->
+<div class="mobile-bar" id="mobileBar">
+  <div class="mobile-stat">
+    <span class="m-label">Next</span>
+    <canvas id="nextCanvasMobile" width="60" height="60"></canvas>
+  </div>
+  <div class="mobile-stat">
+    <span class="m-label">Score</span>
+    <span class="m-value color-magenta" id="scoreMobile">0</span>
+  </div>
+  <div class="mobile-stat">
+    <span class="m-label">Lines</span>
+    <span class="m-value color-cyan" id="linesMobile">0</span>
+  </div>
+  <div class="mobile-stat">
+    <span class="m-label">Level</span>
+    <span class="m-value color-yellow" id="levelMobile">1</span>
+  </div>
+</div>
+
+<!-- Touch controls (shown only on mobile, full viewport width) -->
+<div class="touch-controls" id="touchControls">
+  <div class="touch-row">
+    <button class="touch-btn" id="btnRotateCCW" aria-label="Rotate counter-clockwise">↶</button>
+    <button class="touch-btn" id="btnLeft" aria-label="Move left">◀</button>
+    <button class="touch-btn" id="btnRight" aria-label="Move right">▶</button>
+    <button class="touch-btn" id="btnRotateCW" aria-label="Rotate clockwise">↷</button>
+  </div>
+  <div class="touch-row">
+    <button class="touch-btn wide sm-text" id="btnPause" aria-label="Pause">PAUSE</button>
+    <button class="touch-btn wide" id="btnSoftDrop" aria-label="Soft drop">▼▼</button>
+  </div>
+</div>
+
 <script>
 (function() {
   "use strict";
 
   // ── Constants ──
-  const COLS = 10, ROWS = 20, CELL = 30;
+  const COLS = 10, ROWS = 20;
+  let CELL = 30; // dynamic — updated by computeLayout()
   const LINE_POINTS = [0, 100, 300, 500, 800];
-  const BASE_DROP_INTERVAL = 800; // ms at level 1
+  const BASE_DROP_INTERVAL = 800;
   const SOFT_DROP_INTERVAL = 50;
   const MIN_DROP_INTERVAL = 80;
   const LOCK_DELAY = 500;
+  const TOUCH_REPEAT_INTERVAL  = 100; // ms between repeated move steps while holding a direction button
+  const RESIZE_DEBOUNCE_DELAY  = 120; // ms to wait after resize event before recomputing layout
+  const TAP_THRESHOLD          = 12;  // px — max finger travel to count as a tap
+  const SWIPE_THRESHOLD        = 18;  // px — min travel to count as a directional swipe
+  const TAP_TIME_MAX           = 250; // ms — max contact time to count as a tap
+  const SWIPE_DIRECTION_RATIO  = 1.2; // dominant axis must be this times larger than the other
 
   const COLORS = {
     I: "#00FFFF", O: "#FFE500", T: "#FF00FF", S: "#00FF00",
@@ -267,16 +415,14 @@
 
   const PIECE_TYPES = Object.keys(SHAPES);
 
-  // ── Canvas setup ──
+  // ── Canvas / DOM refs ──
   const canvas = document.getElementById("gameCanvas");
   const ctx = canvas.getContext("2d");
-  canvas.width = COLS * CELL;
-  canvas.height = ROWS * CELL;
-
   const nextCanvas = document.getElementById("nextCanvas");
   const nextCtx = nextCanvas.getContext("2d");
+  const nextCanvasMobile = document.getElementById("nextCanvasMobile");
+  const nextCtxMobile = nextCanvasMobile ? nextCanvasMobile.getContext("2d") : null;
 
-  // ── DOM refs ──
   const scoreEl = document.getElementById("score");
   const linesEl = document.getElementById("lines");
   const levelEl = document.getElementById("level");
@@ -284,13 +430,71 @@
   const gameOverOverlay = document.getElementById("gameOverOverlay");
   const pauseOverlay = document.getElementById("pauseOverlay");
   const finalScoreEl = document.getElementById("finalScore");
+  const leftPanels = document.getElementById("leftPanels");
+  const rightPanels = document.getElementById("rightPanels");
+  const mobileBar = document.getElementById("mobileBar");
+  const touchControls = document.getElementById("touchControls");
+
+  // ── Layout ──
+  function computeLayout() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const useMobile = w <= 600;
+
+    if (useMobile) {
+      leftPanels.style.display = "none";
+      rightPanels.style.display = "none";
+      mobileBar.style.display = "flex";
+      touchControls.style.display = "flex";
+
+      // Estimated heights of surrounding chrome (title, compact stats bar, touch controls, padding)
+      const titleH  = h < 500 ? 46  : 70;   // h1 + margin
+      const barH    = 68;                    // compact mobile stats bar
+      const touchH  = h < 500 ? 100 : 126;  // on-screen control buttons
+      const padH    = h < 500 ? 14  : 24;   // body top+bottom padding
+      const padW    = 16;                    // body left+right padding
+
+      const availW = w - padW;
+      const availH = h - titleH - barH - touchH - padH;
+      CELL = Math.max(14, Math.min(Math.floor(availW / COLS), Math.floor(availH / ROWS)));
+    } else {
+      leftPanels.style.display = "flex";
+      rightPanels.style.display = "flex";
+      mobileBar.style.display = "none";
+      touchControls.style.display = "none";
+
+      // Side panels: two columns (Next/Score/Lines/Level + Controls), narrower on small desktops
+      const sideW   = w > 900 ? 420 : (w > 700 ? 340 : 260); // left + right panel columns + gaps
+      const gapPad  = w > 900 ? 96  : (w > 700 ? 72  : 56);  // flex gap + body padding
+      const titleH  = h < 500 ? 52  : 110;  // h1 + margin (smaller on short/landscape screens)
+      const vertPad = h < 500 ? 20  : 60;   // body top+bottom padding + game-wrap margin
+
+      const availW = w - sideW - gapPad;
+      const availH = h - titleH - vertPad;
+      CELL = Math.max(18, Math.min(36, Math.floor(availW / COLS), Math.floor(availH / ROWS)));
+    }
+
+    canvas.width  = COLS * CELL;
+    canvas.height = ROWS * CELL;
+
+    // Desktop next-piece canvas: large enough for a 4-cell piece
+    const nextSz = CELL * 4 + 16;
+    nextCanvas.width  = nextSz;
+    nextCanvas.height = nextSz;
+
+    // Mobile next-piece canvas: fixed compact size
+    if (nextCanvasMobile) {
+      nextCanvasMobile.width  = 60;
+      nextCanvasMobile.height = 60;
+    }
+  }
 
   // ── Game state ──
   let board, piece, nextPiece, score, totalLines, level;
   let dropInterval, lastDrop, lockTimer;
   let gameRunning, paused, gameOver;
   let softDrop = false;
-  let clearingRows = []; // rows being animated
+  let clearingRows = [];
   let clearFlashTimer = 0;
   let animFrame;
   let bag = [];
@@ -327,17 +531,14 @@
   function spawnPiece(type) {
     const rotation = 0;
     const col = Math.floor((COLS - 4) / 2);
-    const row = 0;
-    // Adjust spawn row: find topmost row offset in shape
     const shape = SHAPES[type][rotation];
     const minR = Math.min(...shape.map(s => s[0]));
-    return { type, rotation, row: row - minR, col };
+    return { type, rotation, row: -minR, col };
   }
 
   function rotatePiece(dir) {
     if (!piece || piece.type === "O") return;
     const newRot = (piece.rotation + dir + 4) % 4;
-    // Try normal position, then wall kicks
     const kicks = [0, -1, 1, -2, 2];
     for (const kick of kicks) {
       if (isValid(piece.type, newRot, piece.row, piece.col + kick)) {
@@ -361,7 +562,7 @@
   }
 
   function ghostRow() {
-    if (!piece) return piece ? piece.row : 0;
+    if (!piece) return 0;
     let r = piece.row;
     while (isValid(piece.type, piece.rotation, r + 1, piece.col)) r++;
     return r;
@@ -371,25 +572,19 @@
     const shape = SHAPES[piece.type][piece.rotation];
     for (const [dr, dc] of shape) {
       const r = piece.row + dr, c = piece.col + dc;
-      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
-        board[r][c] = piece.type;
-      }
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) board[r][c] = piece.type;
     }
     lockTimer = null;
     checkLines();
     spawnNext();
   }
 
-  function resetLock() {
-    lockTimer = null;
-  }
+  function resetLock() { lockTimer = null; }
 
   function spawnNext() {
     piece = spawnPiece(nextPiece);
     nextPiece = nextFromBag();
-    if (!isValid(piece.type, piece.rotation, piece.row, piece.col)) {
-      endGame();
-    }
+    if (!isValid(piece.type, piece.rotation, piece.row, piece.col)) endGame();
     lastDrop = performance.now();
   }
 
@@ -397,20 +592,13 @@
   function checkLines() {
     clearingRows = [];
     for (let r = ROWS - 1; r >= 0; r--) {
-      if (board[r].every(c => c !== null)) {
-        clearingRows.push(r);
-      }
+      if (board[r].every(c => c !== null)) clearingRows.push(r);
     }
-    if (clearingRows.length > 0) {
-      clearFlashTimer = performance.now();
-    } else {
-      clearFlashTimer = 0;
-    }
+    clearFlashTimer = clearingRows.length > 0 ? performance.now() : 0;
   }
 
   function finishClear() {
     const count = clearingRows.length;
-    // Remove rows top-to-bottom (sorted ascending)
     clearingRows.sort((a, b) => a - b);
     for (const r of clearingRows) {
       board.splice(r, 1);
@@ -437,10 +625,8 @@
     }
     context.fillStyle = color;
     context.fillRect(x, y, size, size);
-    // Inner highlight
     context.fillStyle = "rgba(255,255,255,0.3)";
     context.fillRect(x + 2, y + 2, size - 4, size * 0.35);
-    // Border
     context.strokeStyle = "#111";
     context.lineWidth = 2;
     context.strokeRect(x + 1, y + 1, size - 2, size - 2);
@@ -463,15 +649,10 @@
     for (let r = 0; r < ROWS; r++) {
       for (let c = 0; c < COLS; c++) {
         if (board[r][c]) {
-          // Flash effect for clearing rows
           if (clearFlashTimer && clearingRows.includes(r)) {
             const elapsed = performance.now() - clearFlashTimer;
             const flash = Math.sin(elapsed / 40) > 0;
-            if (flash) {
-              drawCell(ctx, c * CELL, r * CELL, CELL, "#FFFFFF", false);
-            } else {
-              drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[board[r][c]], false);
-            }
+            drawCell(ctx, c * CELL, r * CELL, CELL, flash ? "#FFFFFF" : COLORS[board[r][c]], false);
           } else {
             drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[board[r][c]], false);
           }
@@ -483,65 +664,71 @@
       // Ghost piece
       const gr = ghostRow();
       if (gr !== piece.row) {
-        const shape = SHAPES[piece.type][piece.rotation];
-        for (const [dr, dc] of shape) {
+        for (const [dr, dc] of SHAPES[piece.type][piece.rotation]) {
           const r = gr + dr, c = piece.col + dc;
-          if (r >= 0 && r < ROWS) {
-            drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], true);
-          }
+          if (r >= 0 && r < ROWS) drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], true);
         }
       }
-
       // Active piece
-      const shape = SHAPES[piece.type][piece.rotation];
-      for (const [dr, dc] of shape) {
+      for (const [dr, dc] of SHAPES[piece.type][piece.rotation]) {
         const r = piece.row + dr, c = piece.col + dc;
-        if (r >= 0 && r < ROWS) {
-          drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], false);
-        }
+        if (r >= 0 && r < ROWS) drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], false);
       }
     }
 
-    // Next piece preview
     renderNext();
   }
 
-  function renderNext() {
-    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+  function drawNextOn(nc, nctx) {
+    nctx.clearRect(0, 0, nc.width, nc.height);
     if (!nextPiece) return;
     const shape = SHAPES[nextPiece][0];
-    // Center the preview
     const minR = Math.min(...shape.map(s => s[0]));
     const maxR = Math.max(...shape.map(s => s[0]));
     const minC = Math.min(...shape.map(s => s[1]));
     const maxC = Math.max(...shape.map(s => s[1]));
-    const pw = (maxC - minC + 1) * CELL;
-    const ph = (maxR - minR + 1) * CELL;
-    const ox = (nextCanvas.width - pw) / 2 - minC * CELL;
-    const oy = (nextCanvas.height - ph) / 2 - minR * CELL;
+    const pieceW = maxC - minC + 1;
+    const pieceH = maxR - minR + 1;
+    // Fit piece inside canvas with a small margin; cap at CELL so it matches the board
+    const cellSz = Math.min(
+      CELL,
+      Math.floor((nc.width  - 8) / pieceW),
+      Math.floor((nc.height - 8) / pieceH)
+    );
+    const pw = pieceW * cellSz;
+    const ph = pieceH * cellSz;
+    const ox = (nc.width  - pw) / 2 - minC * cellSz;
+    const oy = (nc.height - ph) / 2 - minR * cellSz;
     for (const [dr, dc] of shape) {
-      drawCell(nextCtx, ox + dc * CELL, oy + dr * CELL, CELL, COLORS[nextPiece], false);
+      drawCell(nctx, ox + dc * cellSz, oy + dr * cellSz, cellSz, COLORS[nextPiece], false);
     }
+  }
+
+  function renderNext() {
+    drawNextOn(nextCanvas, nextCtx);
+    if (nextCanvasMobile && nextCtxMobile) drawNextOn(nextCanvasMobile, nextCtxMobile);
   }
 
   function updateUI() {
     scoreEl.textContent = score;
     linesEl.textContent = totalLines;
     levelEl.textContent = level;
+    const sm = document.getElementById("scoreMobile");
+    const lm = document.getElementById("linesMobile");
+    const vm = document.getElementById("levelMobile");
+    if (sm) sm.textContent = score;
+    if (lm) lm.textContent = totalLines;
+    if (vm) vm.textContent = level;
   }
 
   // ── Game loop ──
   function gameLoop(timestamp) {
     if (!gameRunning) return;
     animFrame = requestAnimationFrame(gameLoop);
-
     if (paused) return;
 
-    // Handle line clear animation
     if (clearFlashTimer) {
-      if (timestamp - clearFlashTimer > 300) {
-        finishClear();
-      }
+      if (timestamp - clearFlashTimer > 300) finishClear();
       render();
       return;
     }
@@ -549,14 +736,12 @@
     if (!piece) return;
 
     const interval = softDrop ? SOFT_DROP_INTERVAL : dropInterval;
-
     if (timestamp - lastDrop >= interval) {
       if (movePiece(1, 0)) {
         lastDrop = timestamp;
-        if (softDrop) score += 1; // soft drop bonus
+        if (softDrop) score += 1;
         lockTimer = null;
       } else {
-        // Piece can't move down — start or check lock timer
         if (lockTimer === null) {
           lockTimer = timestamp;
         } else if (timestamp - lockTimer >= LOCK_DELAY) {
@@ -574,11 +759,8 @@
     board = createBoard();
     score = 0; totalLines = 0; level = 1;
     dropInterval = BASE_DROP_INTERVAL;
-    gameOver = false; paused = false;
-    softDrop = false;
-    clearingRows = []; clearFlashTimer = 0;
-    lockTimer = null;
-    bag = [];
+    gameOver = false; paused = false; softDrop = false;
+    clearingRows = []; clearFlashTimer = 0; lockTimer = null; bag = [];
     nextPiece = nextFromBag();
     piece = null;
     spawnNext();
@@ -593,9 +775,7 @@
   }
 
   function endGame() {
-    gameOver = true;
-    gameRunning = false;
-    piece = null;
+    gameOver = true; gameRunning = false; piece = null;
     render();
     finalScoreEl.textContent = "Score: " + score + " | Lines: " + totalLines;
     gameOverOverlay.style.display = "flex";
@@ -608,61 +788,140 @@
     if (!paused) lastDrop = performance.now();
   }
 
-  // ── Input ──
+  // ── Keyboard input ──
   const GAME_KEYS = new Set(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Shift","ShiftLeft","ShiftRight","KeyP","Escape"]);
 
   document.addEventListener("keydown", function(e) {
     if (!gameRunning || gameOver) return;
-
-    if (e.code === "KeyP" || e.code === "Escape") {
-      e.preventDefault();
-      togglePause();
-      return;
-    }
-
+    if (e.code === "KeyP" || e.code === "Escape") { e.preventDefault(); togglePause(); return; }
     if (paused) return;
-
-    // Prevent default for game keys
-    if (GAME_KEYS.has(e.code) || GAME_KEYS.has(e.key)) {
-      e.preventDefault();
-    }
-
-    if (clearFlashTimer) return; // no input during clear animation
-
+    if (GAME_KEYS.has(e.code) || GAME_KEYS.has(e.key)) e.preventDefault();
+    if (clearFlashTimer) return;
     switch (e.code) {
-      case "ArrowLeft":
-        movePiece(0, -1);
-        break;
-      case "ArrowRight":
-        movePiece(0, 1);
-        break;
-      case "ArrowUp":
-        rotatePiece(1); // clockwise
-        break;
-      case "ArrowDown":
-        rotatePiece(-1); // counter-clockwise
-        break;
-      case "ShiftLeft":
-      case "ShiftRight":
-        if (!softDrop) {
-          softDrop = true;
-          lastDrop = 0; // trigger immediate drop
-        }
+      case "ArrowLeft":  movePiece(0, -1); break;
+      case "ArrowRight": movePiece(0,  1); break;
+      case "ArrowUp":    rotatePiece(1);  break;
+      case "ArrowDown":  rotatePiece(-1); break;
+      case "ShiftLeft": case "ShiftRight":
+        if (!softDrop) { softDrop = true; lastDrop = 0; }
         break;
     }
   });
 
   document.addEventListener("keyup", function(e) {
-    if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
-      softDrop = false;
-    }
+    if (e.code === "ShiftLeft" || e.code === "ShiftRight") softDrop = false;
   });
+
+  // ── Touch controls ──
+  function setupTouchControls() {
+    // Tap-only button (no repeat)
+    function bindTap(id, action) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        if (!gameRunning || gameOver || paused || clearFlashTimer) return;
+        action();
+      }, { passive: false });
+    }
+
+    // Hold button with auto-repeat
+    function bindHold(id, action) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      let iv = null;
+      function start(e) {
+        e.preventDefault();
+        if (!gameRunning || gameOver || paused || clearFlashTimer) return;
+        action();
+        iv = setInterval(function() {
+          if (!gameRunning || gameOver || paused || clearFlashTimer) { clearInterval(iv); iv = null; return; }
+          action();
+        }, TOUCH_REPEAT_INTERVAL);
+      }
+      function stop(e) { e.preventDefault(); if (iv) { clearInterval(iv); iv = null; } }
+      el.addEventListener("touchstart",  start, { passive: false });
+      el.addEventListener("touchend",    stop,  { passive: false });
+      el.addEventListener("touchcancel", function() { if (iv) { clearInterval(iv); iv = null; } });
+    }
+
+    bindTap("btnRotateCW",  function() { rotatePiece(1);   });
+    bindTap("btnRotateCCW", function() { rotatePiece(-1);  });
+    bindHold("btnLeft",     function() { movePiece(0, -1); });
+    bindHold("btnRight",    function() { movePiece(0,  1); });
+
+    // Pause
+    const pauseBtn = document.getElementById("btnPause");
+    if (pauseBtn) {
+      pauseBtn.addEventListener("touchstart", function(e) { e.preventDefault(); togglePause(); }, { passive: false });
+    }
+
+    // Soft-drop: active while held
+    const sdBtn = document.getElementById("btnSoftDrop");
+    if (sdBtn) {
+      sdBtn.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        if (!gameRunning || gameOver || paused) return;
+        softDrop = true; lastDrop = 0;
+      }, { passive: false });
+      sdBtn.addEventListener("touchend",    function(e) { e.preventDefault(); softDrop = false; }, { passive: false });
+      sdBtn.addEventListener("touchcancel", function()  { softDrop = false; });
+    }
+  }
+
+  // ── Swipe / tap gestures on the canvas ──
+  function setupSwipe() {
+    let startX, startY, startTime;
+
+    canvas.addEventListener("touchstart", function(e) {
+      e.preventDefault();
+      const t = e.touches[0];
+      startX = t.clientX; startY = t.clientY; startTime = Date.now();
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", function(e) {
+      e.preventDefault();
+    }, { passive: false });
+
+    canvas.addEventListener("touchend", function(e) {
+      e.preventDefault();
+      if (!gameRunning || gameOver || paused || clearFlashTimer) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - startX;
+      const dy = t.clientY - startY;
+      const dt = Date.now() - startTime;
+      const absDx = Math.abs(dx), absDy = Math.abs(dy);
+
+      if (absDx < TAP_THRESHOLD && absDy < TAP_THRESHOLD && dt < TAP_TIME_MAX) {
+        // Tap → rotate CW
+        rotatePiece(1);
+      } else if (absDx > absDy * SWIPE_DIRECTION_RATIO && absDx > SWIPE_THRESHOLD) {
+        // Horizontal swipe → move
+        movePiece(0, dx > 0 ? 1 : -1);
+      } else if (absDy > absDx * SWIPE_DIRECTION_RATIO && absDy > SWIPE_THRESHOLD && dy > 0) {
+        // Swipe down → one soft-drop step
+        movePiece(1, 0);
+      }
+    }, { passive: false });
+  }
+
+  // ── Window resize / orientation ──
+  let resizeTimer;
+  function onResize() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() { computeLayout(); render(); }, RESIZE_DEBOUNCE_DELAY);
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", function() { setTimeout(function() { computeLayout(); render(); }, 250); });
 
   // ── Buttons ──
   document.getElementById("startBtn").addEventListener("click", startGame);
   document.getElementById("restartBtn").addEventListener("click", startGame);
 
-  // Initial render
+  // ── Bootstrap ──
+  setupTouchControls();
+  setupSwipe();
+  computeLayout();
   board = createBoard();
   render();
 })();
