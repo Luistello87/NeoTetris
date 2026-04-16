@@ -1,0 +1,8 @@
+{
+  "assignments": [{
+    "assignment_id": "neotetris-2026-04-16",
+    "universe": "Tron",
+    "agents": ["flynn", "quorra", "tron", "rinzler"],
+    "created_at": "2026-04-16"
+  }]
+}

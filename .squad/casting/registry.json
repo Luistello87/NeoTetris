@@ -1,0 +1,8 @@
+{
+  "agents": {
+    "flynn": { "persistent_name": "Flynn", "universe": "Tron", "created_at": "2026-04-16", "legacy_named": false, "status": "active" },
+    "quorra": { "persistent_name": "Quorra", "universe": "Tron", "created_at": "2026-04-16", "legacy_named": false, "status": "active" },
+    "tron": { "persistent_name": "Tron", "universe": "Tron", "created_at": "2026-04-16", "legacy_named": false, "status": "active" },
+    "rinzler": { "persistent_name": "Rinzler", "universe": "Tron", "created_at": "2026-04-16", "legacy_named": false, "status": "active" }
+  }
+}
