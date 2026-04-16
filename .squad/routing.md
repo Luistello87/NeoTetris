@@ -11,6 +11,7 @@ How to decide who handles what.
 | Game logic & mechanics | Tron | Tetris engine, collision, rotation, scoring, game loop |
 | Code review | Flynn | Review PRs, check quality, suggest improvements |
 | Testing | Rinzler | Test gameplay, find edge cases, verify controls |
+| Diagrams & docs | Yori | Mermaid diagrams, architecture visualization, workflow docs |
 | Scope & priorities | Flynn | What to build next, trade-offs, decisions |
 | Session logging | Scribe | Automatic — never needs routing |
 

@@ -17,6 +17,7 @@
 | Tron | Game Dev | .squad/agents/tron/charter.md | 🔧 Game Dev |
 | Rinzler | Tester | .squad/agents/rinzler/charter.md | 🧪 Tester |
 | Scribe | Scribe | .squad/agents/scribe/charter.md | 📋 Scribe |
+| Yori | Diagram Author | .squad/agents/yori/charter.md | 📝 Diagrams |
 | Ralph | Work Monitor | — | 🔄 Monitor |
 
 ## Project Context
