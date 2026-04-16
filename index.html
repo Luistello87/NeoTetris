@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEOTETRIS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #F5F0E8;
+    font-family: 'Courier New', Courier, monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    color: #111;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    background: #111;
+    color: #F5F0E8;
+    padding: 10px 32px;
+    border: 4px solid #111;
+    box-shadow: 6px 6px 0px #FF00FF;
+    user-select: none;
+  }
+
+  .game-wrap {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .panel {
+    background: #FFF;
+    border: 4px solid #111;
+    box-shadow: 5px 5px 0px #111;
+    padding: 16px;
+    min-width: 160px;
+  }
+
+  .panel h2 {
+    font-size: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 3px solid #111;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+  }
+
+  .stat-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #555; }
+  .stat-value { font-size: 1.6rem; font-weight: 900; margin-bottom: 10px; }
+
+  #nextCanvas {
+    border: 3px solid #111;
+    background: #FAFAF5;
+    display: block;
+    margin: 0 auto;
+  }
+
+  #gameCanvas {
+    border: 4px solid #111;
+    box-shadow: 6px 6px 0px #111;
+    background: #FAFAF5;
+    display: block;
+  }
+
+  .controls-ref {
+    font-size: 0.7rem;
+    line-height: 1.6;
+  }
+  .controls-ref kbd {
+    background: #111;
+    color: #F5F0E8;
+    padding: 2px 6px;
+    font-family: inherit;
+    font-weight: 700;
+    border: 2px solid #111;
+    box-shadow: 2px 2px 0px #FF00FF;
+  }
+
+  .btn {
+    display: inline-block;
+    background: #111;
+    color: #F5F0E8;
+    border: 3px solid #111;
+    padding: 10px 24px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #FF00FF;
+    transition: transform 0.1s, box-shadow 0.1s;
+    margin-top: 12px;
+    user-select: none;
+  }
+  .btn:hover {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px #FF00FF;
+  }
+  .btn:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px #FF00FF;
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(17,17,17,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #F5F0E8;
+    z-index: 10;
+  }
+  .overlay h2 { font-size: 2rem; letter-spacing: 4px; margin-bottom: 8px; border: none; color: #F5F0E8; }
+  .overlay .final-score { font-size: 1.4rem; margin-bottom: 16px; }
+  .overlay .btn { background: #FF00FF; color: #111; border-color: #FF00FF; box-shadow: 4px 4px 0px #00FFFF; }
+  .overlay .btn:hover { box-shadow: 2px 2px 0px #00FFFF; }
+
+  .board-wrap {
+    position: relative;
+    display: inline-block;
+  }
+
+  @media (max-width: 600px) {
+    .game-wrap { flex-direction: column; align-items: center; }
+    .panel { min-width: 140px; }
+  }
+</style>
+</head>
+<body>
+<h1>NEOTETRIS</h1>
+<div class="game-wrap">
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="panel">
+      <h2>Next</h2>
+      <canvas id="nextCanvas" width="120" height="120"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Score</h2>
+      <div class="stat-label">Points</div>
+      <div class="stat-value" id="score">0</div>
+      <div class="stat-label">Lines</div>
+      <div class="stat-value" id="lines">0</div>
+      <div class="stat-label">Level</div>
+      <div class="stat-value" id="level">1</div>
+    </div>
+  </div>
+
+  <div class="board-wrap">
+    <canvas id="gameCanvas"></canvas>
+    <div class="overlay" id="startOverlay">
+      <h2>NEOTETRIS</h2>
+      <button class="btn" id="startBtn">Start Game</button>
+    </div>
+    <div class="overlay" id="gameOverOverlay" style="display:none;">
+      <h2>Game Over</h2>
+      <div class="final-score" id="finalScore"></div>
+      <button class="btn" id="restartBtn">Play Again</button>
+    </div>
+    <div class="overlay" id="pauseOverlay" style="display:none;">
+      <h2>Paused</h2>
+      <div style="font-size:0.9rem;margin-top:8px;">Press P or Esc to resume</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="panel controls-ref">
+      <h2>Controls</h2>
+      <kbd>←</kbd> <kbd>→</kbd> Move<br>
+      <kbd>↑</kbd> Rotate CW<br>
+      <kbd>↓</kbd> Rotate CCW<br>
+      <kbd>Shift</kbd> Soft Drop<br>
+      <kbd>P</kbd> / <kbd>Esc</kbd> Pause
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ── Constants ──
+  const COLS = 10, ROWS = 20, CELL = 30;
+  const LINE_POINTS = [0, 100, 300, 500, 800];
+  const BASE_DROP_INTERVAL = 800; // ms at level 1
+  const SOFT_DROP_INTERVAL = 50;
+  const MIN_DROP_INTERVAL = 80;
+  const LOCK_DELAY = 500;
+
+  const COLORS = {
+    I: "#00FFFF", O: "#FFE500", T: "#FF00FF", S: "#00FF00",
+    Z: "#FF3333", J: "#3366FF", L: "#FF8800"
+  };
+
+  // Piece shapes: each is array of rotations, each rotation is array of [row, col] offsets
+  const SHAPES = {
+    I: [[[0,0],[0,1],[0,2],[0,3]], [[0,0],[1,0],[2,0],[3,0]],
+        [[0,0],[0,1],[0,2],[0,3]], [[0,0],[1,0],[2,0],[3,0]]],
+    O: [[[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[1,0],[1,1]],
+        [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[1,0],[1,1]]],
+    T: [[[0,0],[0,1],[0,2],[1,1]], [[0,0],[1,0],[2,0],[1,1]],
+        [[1,0],[1,1],[1,2],[0,1]], [[0,0],[1,0],[2,0],[1,-1]]],
+    S: [[[0,1],[0,2],[1,0],[1,1]], [[0,0],[1,0],[1,1],[2,1]],
+        [[0,1],[0,2],[1,0],[1,1]], [[0,0],[1,0],[1,1],[2,1]]],
+    Z: [[[0,0],[0,1],[1,1],[1,2]], [[0,1],[1,0],[1,1],[2,0]],
+        [[0,0],[0,1],[1,1],[1,2]], [[0,1],[1,0],[1,1],[2,0]]],
+    J: [[[0,0],[1,0],[1,1],[1,2]], [[0,0],[0,1],[1,0],[2,0]],
+        [[0,0],[0,1],[0,2],[1,2]], [[0,0],[1,0],[2,0],[2,-1]]],
+    L: [[[0,2],[1,0],[1,1],[1,2]], [[0,0],[1,0],[2,0],[2,1]],
+        [[0,0],[0,1],[0,2],[1,0]], [[0,0],[0,1],[1,1],[2,1]]]
+  };
+
+  const PIECE_TYPES = Object.keys(SHAPES);
+
+  // ── Canvas setup ──
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = COLS * CELL;
+  canvas.height = ROWS * CELL;
+
+  const nextCanvas = document.getElementById("nextCanvas");
+  const nextCtx = nextCanvas.getContext("2d");
+
+  // ── DOM refs ──
+  const scoreEl = document.getElementById("score");
+  const linesEl = document.getElementById("lines");
+  const levelEl = document.getElementById("level");
+  const startOverlay = document.getElementById("startOverlay");
+  const gameOverOverlay = document.getElementById("gameOverOverlay");
+  const pauseOverlay = document.getElementById("pauseOverlay");
+  const finalScoreEl = document.getElementById("finalScore");
+
+  // ── Game state ──
+  let board, piece, nextPiece, score, totalLines, level;
+  let dropInterval, lastDrop, lockTimer;
+  let gameRunning, paused, gameOver;
+  let softDrop = false;
+  let clearingRows = []; // rows being animated
+  let clearFlashTimer = 0;
+  let animFrame;
+  let bag = [];
+
+  // ── Bag randomizer (7-bag) ──
+  function refillBag() {
+    bag = PIECE_TYPES.slice();
+    for (let i = bag.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+  }
+  function nextFromBag() {
+    if (bag.length === 0) refillBag();
+    return bag.pop();
+  }
+
+  // ── Board helpers ──
+  function createBoard() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+  }
+
+  function isValid(type, rotation, row, col) {
+    const shape = SHAPES[type][rotation];
+    for (const [dr, dc] of shape) {
+      const r = row + dr, c = col + dc;
+      if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return false;
+      if (board[r][c]) return false;
+    }
+    return true;
+  }
+
+  // ── Piece management ──
+  function spawnPiece(type) {
+    const rotation = 0;
+    const col = Math.floor((COLS - 4) / 2);
+    const row = 0;
+    // Adjust spawn row: find topmost row offset in shape
+    const shape = SHAPES[type][rotation];
+    const minR = Math.min(...shape.map(s => s[0]));
+    return { type, rotation, row: row - minR, col };
+  }
+
+  function rotatePiece(dir) {
+    if (!piece || piece.type === "O") return;
+    const newRot = (piece.rotation + dir + 4) % 4;
+    // Try normal position, then wall kicks
+    const kicks = [0, -1, 1, -2, 2];
+    for (const kick of kicks) {
+      if (isValid(piece.type, newRot, piece.row, piece.col + kick)) {
+        piece.rotation = newRot;
+        piece.col += kick;
+        resetLock();
+        return;
+      }
+    }
+  }
+
+  function movePiece(dr, dc) {
+    if (!piece) return false;
+    if (isValid(piece.type, piece.rotation, piece.row + dr, piece.col + dc)) {
+      piece.row += dr;
+      piece.col += dc;
+      if (dc !== 0) resetLock();
+      return true;
+    }
+    return false;
+  }
+
+  function ghostRow() {
+    if (!piece) return piece ? piece.row : 0;
+    let r = piece.row;
+    while (isValid(piece.type, piece.rotation, r + 1, piece.col)) r++;
+    return r;
+  }
+
+  function lockPiece() {
+    const shape = SHAPES[piece.type][piece.rotation];
+    for (const [dr, dc] of shape) {
+      const r = piece.row + dr, c = piece.col + dc;
+      if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+        board[r][c] = piece.type;
+      }
+    }
+    lockTimer = null;
+    checkLines();
+    spawnNext();
+  }
+
+  function resetLock() {
+    lockTimer = null;
+  }
+
+  function spawnNext() {
+    piece = spawnPiece(nextPiece);
+    nextPiece = nextFromBag();
+    if (!isValid(piece.type, piece.rotation, piece.row, piece.col)) {
+      endGame();
+    }
+    lastDrop = performance.now();
+  }
+
+  // ── Line clearing ──
+  function checkLines() {
+    clearingRows = [];
+    for (let r = ROWS - 1; r >= 0; r--) {
+      if (board[r].every(c => c !== null)) {
+        clearingRows.push(r);
+      }
+    }
+    if (clearingRows.length > 0) {
+      clearFlashTimer = performance.now();
+    } else {
+      clearFlashTimer = 0;
+    }
+  }
+
+  function finishClear() {
+    const count = clearingRows.length;
+    // Remove rows top-to-bottom (sorted ascending)
+    clearingRows.sort((a, b) => a - b);
+    for (const r of clearingRows) {
+      board.splice(r, 1);
+      board.unshift(Array(COLS).fill(null));
+    }
+    totalLines += count;
+    score += LINE_POINTS[count] * level;
+    level = Math.floor(totalLines / 10) + 1;
+    dropInterval = Math.max(MIN_DROP_INTERVAL, BASE_DROP_INTERVAL - (level - 1) * 60);
+    updateUI();
+    clearingRows = [];
+    clearFlashTimer = 0;
+  }
+
+  // ── Rendering ──
+  function drawCell(context, x, y, size, color, ghost) {
+    if (ghost) {
+      context.fillStyle = color + "44";
+      context.fillRect(x + 1, y + 1, size - 2, size - 2);
+      context.strokeStyle = color + "88";
+      context.lineWidth = 2;
+      context.strokeRect(x + 1, y + 1, size - 2, size - 2);
+      return;
+    }
+    context.fillStyle = color;
+    context.fillRect(x, y, size, size);
+    // Inner highlight
+    context.fillStyle = "rgba(255,255,255,0.3)";
+    context.fillRect(x + 2, y + 2, size - 4, size * 0.35);
+    // Border
+    context.strokeStyle = "#111";
+    context.lineWidth = 2;
+    context.strokeRect(x + 1, y + 1, size - 2, size - 2);
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Grid lines
+    ctx.strokeStyle = "#E0DBD1";
+    ctx.lineWidth = 1;
+    for (let r = 0; r <= ROWS; r++) {
+      ctx.beginPath(); ctx.moveTo(0, r * CELL); ctx.lineTo(COLS * CELL, r * CELL); ctx.stroke();
+    }
+    for (let c = 0; c <= COLS; c++) {
+      ctx.beginPath(); ctx.moveTo(c * CELL, 0); ctx.lineTo(c * CELL, ROWS * CELL); ctx.stroke();
+    }
+
+    // Board cells
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (board[r][c]) {
+          // Flash effect for clearing rows
+          if (clearFlashTimer && clearingRows.includes(r)) {
+            const elapsed = performance.now() - clearFlashTimer;
+            const flash = Math.sin(elapsed / 40) > 0;
+            if (flash) {
+              drawCell(ctx, c * CELL, r * CELL, CELL, "#FFFFFF", false);
+            } else {
+              drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[board[r][c]], false);
+            }
+          } else {
+            drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[board[r][c]], false);
+          }
+        }
+      }
+    }
+
+    if (piece && !gameOver) {
+      // Ghost piece
+      const gr = ghostRow();
+      if (gr !== piece.row) {
+        const shape = SHAPES[piece.type][piece.rotation];
+        for (const [dr, dc] of shape) {
+          const r = gr + dr, c = piece.col + dc;
+          if (r >= 0 && r < ROWS) {
+            drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], true);
+          }
+        }
+      }
+
+      // Active piece
+      const shape = SHAPES[piece.type][piece.rotation];
+      for (const [dr, dc] of shape) {
+        const r = piece.row + dr, c = piece.col + dc;
+        if (r >= 0 && r < ROWS) {
+          drawCell(ctx, c * CELL, r * CELL, CELL, COLORS[piece.type], false);
+        }
+      }
+    }
+
+    // Next piece preview
+    renderNext();
+  }
+
+  function renderNext() {
+    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+    if (!nextPiece) return;
+    const shape = SHAPES[nextPiece][0];
+    // Center the preview
+    const minR = Math.min(...shape.map(s => s[0]));
+    const maxR = Math.max(...shape.map(s => s[0]));
+    const minC = Math.min(...shape.map(s => s[1]));
+    const maxC = Math.max(...shape.map(s => s[1]));
+    const pw = (maxC - minC + 1) * CELL;
+    const ph = (maxR - minR + 1) * CELL;
+    const ox = (nextCanvas.width - pw) / 2 - minC * CELL;
+    const oy = (nextCanvas.height - ph) / 2 - minR * CELL;
+    for (const [dr, dc] of shape) {
+      drawCell(nextCtx, ox + dc * CELL, oy + dr * CELL, CELL, COLORS[nextPiece], false);
+    }
+  }
+
+  function updateUI() {
+    scoreEl.textContent = score;
+    linesEl.textContent = totalLines;
+    levelEl.textContent = level;
+  }
+
+  // ── Game loop ──
+  function gameLoop(timestamp) {
+    if (!gameRunning) return;
+    animFrame = requestAnimationFrame(gameLoop);
+
+    if (paused) return;
+
+    // Handle line clear animation
+    if (clearFlashTimer) {
+      if (timestamp - clearFlashTimer > 300) {
+        finishClear();
+      }
+      render();
+      return;
+    }
+
+    if (!piece) return;
+
+    const interval = softDrop ? SOFT_DROP_INTERVAL : dropInterval;
+
+    if (timestamp - lastDrop >= interval) {
+      if (movePiece(1, 0)) {
+        lastDrop = timestamp;
+        if (softDrop) score += 1; // soft drop bonus
+        lockTimer = null;
+      } else {
+        // Piece can't move down — start or check lock timer
+        if (lockTimer === null) {
+          lockTimer = timestamp;
+        } else if (timestamp - lockTimer >= LOCK_DELAY) {
+          lockPiece();
+          lastDrop = timestamp;
+        }
+      }
+    }
+
+    render();
+  }
+
+  // ── Game lifecycle ──
+  function startGame() {
+    board = createBoard();
+    score = 0; totalLines = 0; level = 1;
+    dropInterval = BASE_DROP_INTERVAL;
+    gameOver = false; paused = false;
+    softDrop = false;
+    clearingRows = []; clearFlashTimer = 0;
+    lockTimer = null;
+    bag = [];
+    nextPiece = nextFromBag();
+    piece = null;
+    spawnNext();
+    updateUI();
+    startOverlay.style.display = "none";
+    gameOverOverlay.style.display = "none";
+    pauseOverlay.style.display = "none";
+    gameRunning = true;
+    lastDrop = performance.now();
+    if (animFrame) cancelAnimationFrame(animFrame);
+    animFrame = requestAnimationFrame(gameLoop);
+  }
+
+  function endGame() {
+    gameOver = true;
+    gameRunning = false;
+    piece = null;
+    render();
+    finalScoreEl.textContent = "Score: " + score + " | Lines: " + totalLines;
+    gameOverOverlay.style.display = "flex";
+  }
+
+  function togglePause() {
+    if (gameOver || !gameRunning) return;
+    paused = !paused;
+    pauseOverlay.style.display = paused ? "flex" : "none";
+    if (!paused) lastDrop = performance.now();
+  }
+
+  // ── Input ──
+  const GAME_KEYS = new Set(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","Shift","ShiftLeft","ShiftRight","KeyP","Escape"]);
+
+  document.addEventListener("keydown", function(e) {
+    if (!gameRunning || gameOver) return;
+
+    if (e.code === "KeyP" || e.code === "Escape") {
+      e.preventDefault();
+      togglePause();
+      return;
+    }
+
+    if (paused) return;
+
+    // Prevent default for game keys
+    if (GAME_KEYS.has(e.code) || GAME_KEYS.has(e.key)) {
+      e.preventDefault();
+    }
+
+    if (clearFlashTimer) return; // no input during clear animation
+
+    switch (e.code) {
+      case "ArrowLeft":
+        movePiece(0, -1);
+        break;
+      case "ArrowRight":
+        movePiece(0, 1);
+        break;
+      case "ArrowUp":
+        rotatePiece(1); // clockwise
+        break;
+      case "ArrowDown":
+        rotatePiece(-1); // counter-clockwise
+        break;
+      case "ShiftLeft":
+      case "ShiftRight":
+        if (!softDrop) {
+          softDrop = true;
+          lastDrop = 0; // trigger immediate drop
+        }
+        break;
+    }
+  });
+
+  document.addEventListener("keyup", function(e) {
+    if (e.code === "ShiftLeft" || e.code === "ShiftRight") {
+      softDrop = false;
+    }
+  });
+
+  // ── Buttons ──
+  document.getElementById("startBtn").addEventListener("click", startGame);
+  document.getElementById("restartBtn").addEventListener("click", startGame);
+
+  // Initial render
+  board = createBoard();
+  render();
+})();
+</script>
+</body>
+</html>
