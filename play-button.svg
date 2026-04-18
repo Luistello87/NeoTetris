@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 120" width="100%">
+  <!-- Shadow -->
+  <rect x="25" y="25" width="550" height="70" fill="#00FFFF" />
+  
+  <!-- Main Background -->
+  <rect x="15" y="15" width="550" height="70" fill="#FF00FF" stroke="#111111" stroke-width="6" />
+  
+  <!-- Icon & Text -->
+  <text x="290" y="58" font-family="'Courier New', Courier, monospace" font-size="32" font-weight="900" letter-spacing="4" fill="#111111" text-anchor="middle" dominant-baseline="middle">
+    🎮 PLAY NEOTETRIS
+  </text>
+</svg>

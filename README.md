@@ -1,6 +1,10 @@
 # NeoTetris
 
-## 🎮 [Play NeoTetris Now](https://luistello87.github.io/NeoTetris/)
+<div align="center">
+  <a href="https://luistello87.github.io/NeoTetris/">
+    <img src="play-button.svg" alt="Play NeoTetris" style="width: 100%; max-width: 600px; height: auto;" />
+  </a>
+</div>
 
 ---
 
