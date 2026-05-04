@@ -1,0 +1,8 @@
+{
+  "name": "neotetris",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test test/tetris-logic.test.js"
+  }
+}
